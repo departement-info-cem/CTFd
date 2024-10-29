@@ -220,6 +220,8 @@ class ChallengeList(Resource):
             )
 
         db.session.close()
+        # Sort challenge by reverse alphabetical order of the category so dumb js can display them in order
+        response.sort(key=lambda x: x["category"].lower(), reverse=True)
         return {"success": True, "data": response}
 
     @admins_only
