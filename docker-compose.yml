@@ -1,7 +1,6 @@
 services:
   ctfd:
     build: .
-    user: root
     restart: always
     environment:
       - SECRET_KEY=secretcftd998877112233

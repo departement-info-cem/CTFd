@@ -13,6 +13,7 @@ from jinja2 import FileSystemLoader
 from jinja2.sandbox import SandboxedEnvironment
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import safe_join
+from werkzeug.wsgi import get_host
 
 import CTFd.utils.config
 from CTFd import utils
@@ -32,7 +33,7 @@ from CTFd.utils.sessions import CachingSessionInterface
 from CTFd.utils.updates import update_check
 from CTFd.utils.user import get_locale
 
-__version__ = "3.7.4"
+__version__ = "3.8.2"
 __channel__ = "oss"
 
 
@@ -54,16 +55,39 @@ class CTFdFlask(Flask):
         self.session_interface = CachingSessionInterface(key_prefix="session")
         self.request_class = CTFdRequest
 
+        Flask.__init__(self, *args, **kwargs)
+
         # Store server start time
         self.start_time = datetime.datetime.utcnow()
 
-        # Create generally unique run identifier
-        self.run_id = sha256(str(self.start_time))[0:8]
-        Flask.__init__(self, *args, **kwargs)
+        # Create time-based run identifier.
+        # In production round the timestamp to incrase chances that workers get the same run_id
+        if self.debug:
+            time_based_run_id = str(self.start_time)
+        else:
+            time_based_run_id = str(round(self.start_time.timestamp() / 60) * 60)
+
+        self.time_based_run_id = sha256(time_based_run_id)[0:8]
+
+    @property
+    def run_id(self):
+        # use RUN_ID if exists, otherwise fall back to time_based_run_in
+        return self.config.get("RUN_ID") or self.time_based_run_id
 
     def create_jinja_environment(self):
         """Overridden jinja environment constructor"""
         return super(CTFdFlask, self).create_jinja_environment()
+
+    def create_url_adapter(self, request):
+        # TODO: Backport of TRUSTED_HOSTS behavior from Flask. Remove when possible.
+        # https://github.com/pallets/flask/pull/5637
+        if request is not None:
+            if (trusted_hosts := self.config.get("TRUSTED_HOSTS")) is not None:
+                request.trusted_hosts = trusted_hosts
+
+            # Check trusted_hosts here until bind_to_environ does.
+            request.host = get_host(request.environ, request.trusted_hosts)
+        return super(CTFdFlask, self).create_url_adapter(request)
 
 
 class SandboxedBaseEnvironment(SandboxedEnvironment):
@@ -286,7 +310,7 @@ def create_app(config="CTFd.config.Config"):
             utils.set_config("ctf_version", __version__)
 
         if not utils.get_config("ctf_theme"):
-            utils.set_config("ctf_theme", "core-beta")
+            utils.set_config("ctf_theme", DEFAULT_THEME)
 
         update_check(force=True)
 
