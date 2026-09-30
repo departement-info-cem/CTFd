@@ -147,6 +147,12 @@ class ServerConfig(object):
         CACHE_THRESHOLD: int = 0
 
     # === SECURITY ===
+    # Cookie de session préfixé __Host- : le navigateur ne l'accepte que sans
+    # Domain, avec Secure et Path=/. Les défis, servis sous un sous-domaine de
+    # CTFd, ne peuvent donc ni le poser ni l'écraser (ctf-infra, décision D8).
+    SESSION_COOKIE_NAME: str = "__Host-session"
+    SESSION_COOKIE_SECURE: bool = True
+
     SESSION_COOKIE_HTTPONLY: bool = config_ini["security"].getboolean("SESSION_COOKIE_HTTPONLY", fallback=True)
 
     SESSION_COOKIE_SAMESITE: str = empty_str_cast(config_ini["security"]["SESSION_COOKIE_SAMESITE"]) \
@@ -317,6 +323,9 @@ class TestingConfig(ServerConfig):
     CACHE_TYPE = "simple"
     CACHE_THRESHOLD = 500
     SAFE_MODE = True
+    # Les tests tournent en HTTP : cookie de session classique.
+    SESSION_COOKIE_NAME = "session"
+    SESSION_COOKIE_SECURE = False
 
 
 # Actually initialize ServerConfig to allow us to add more attributes on
