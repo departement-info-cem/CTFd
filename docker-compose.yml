@@ -2,11 +2,14 @@ services:
   ctfd:
     build: .
     restart: always
+    # Secrets hors git : en prod, ctf-infra pose docker-compose.override.yml
+    # (environnement lu dans /etc/ctfd/ctfd.env). Ailleurs, les fournir par
+    # l'environnement ou un fichier .env non versionné.
     environment:
-      - SECRET_KEY=secretcftd998877112233
+      - SECRET_KEY=${SECRET_KEY:-}
       - UPLOAD_FOLDER=/var/uploads
-      - DATABASE_URL=mysql+pymysql://ctfdadmin:Start4ctfctf$@mysql.ctf.lan/ctfd
-      - REDIS_URL=redis://ctfduser:catchmeifyoucanorforgetitforever182432@redis.ctf.lan:6379
+      - DATABASE_URL=${DATABASE_URL:-}
+      - REDIS_URL=${REDIS_URL:-}
       - WORKERS=1
       - LOG_FOLDER=/var/log/CTFd
       - ACCESS_LOG=-
