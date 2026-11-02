@@ -1,6 +1,7 @@
 import "bootstrap/dist/js/bootstrap.bundle";
 import $ from "jquery";
 import EasyMDE from "easymde";
+import DOMPurify from "dompurify";
 import Vue from "vue";
 import MediaLibrary from "./components/files/MediaLibrary.vue";
 import hljs from "highlight.js";
@@ -64,6 +65,8 @@ export function bindMarkdownEditor(elem) {
       renderingConfig: {
         codeSyntaxHighlighting: true,
         hljs: hljs,
+        // The preview is rendered in the admin's session: never run its HTML
+        sanitizerFunction: (html) => DOMPurify.sanitize(html),
       },
     });
     elem.mde = mde;
