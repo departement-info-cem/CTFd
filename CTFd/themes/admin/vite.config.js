@@ -16,6 +16,11 @@ export default defineConfig({
   build: {
     manifest: "manifest.json",
     outDir: "static",
+    // The default "auto" mode detects CommonJS cycles in module load order,
+    // which varies between runs and makes `yarn verify` flaky
+    commonjsOptions: {
+      strictRequires: true
+    },
     rollupOptions: {
       plugins: [
         copy({
